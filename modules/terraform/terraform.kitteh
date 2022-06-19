@@ -1,0 +1,50 @@
+# vim: set syntax=python:
+
+load("os", "os")
+load("encoding/json", "encode", "decode")
+
+
+def workspace(workdir, tfpath=None):
+  if not tfpath:
+    tfpath = look_path('terraform')
+
+  if not tfpath:
+    # TODO: error
+    return None
+
+  def exec(cmd, args=[], vars={}, env=[]):
+    vargs = []
+    if vars:
+      # TODO: write to a tempfile somewhere, do not mess with workdir.
+      path = '%s/terraform.tsvars.json' % workdir
+
+      os.write_text_file(path, encode(vars))
+
+      vargs = ['-var-file=' + path]
+
+    _, out = os.exec(tfpath, [cmd, "-no-color"] + vargs + args, env=env, dir=workdir)
+    return out
+
+  def init(env=[]):
+    exec("init", env=env)
+
+  def import(addr, id, vars={}, env={}):
+    exec("import", ["-input=false"] + [addr, id], vars=vars, env=env)
+
+  def apply(vars={}, env={}):
+    exec("apply", ["-input=false", "-auto-approve"], vars=vars, env=env)
+
+  def destroy(vars={}, env={}):
+    exec("destroy", ["-input=false", "-auto-approve"], vars=vars, env=env)
+
+  def output(env={}):
+    return decode(exec("output", ["-json"], env))
+
+  return struct(
+    init=init,
+    import=import,
+    apply=apply,
+    destroy=destroy,
+    output=output,
+    exec=exec,
+  )
