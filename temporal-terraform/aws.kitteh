@@ -1,0 +1,37 @@
+load('aws', 'ec2')
+
+
+def find_vpc_by_name(name):
+  resp = ec2.DescribeVpcs(
+    params={
+      'Filters': [
+        {
+          'Name': 'tag:Name',
+          'Values': [name],
+        }
+      ]
+    }
+  )
+
+  vpcs = resp['Vpcs']
+
+  if not vpcs:
+    return None
+
+  if len(vpcs) > 1:
+    fail('multiple vpcs found with the name %s' % name)
+
+  return vpcs[0]
+
+
+def list_subnets(vpc_id):
+  return ec2.DescribeSubnets(
+    params={
+      'Filters': [
+        {
+          'Name': 'vpc-id',
+          'Values': [vpc_id],
+        }
+      ]
+    }
+  )['Subnets']

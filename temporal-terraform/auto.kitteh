@@ -1,0 +1,130 @@
+load('ak', 'ak')
+load('os', 'os')
+load('aws', aws_creds='secret_credentials')
+
+load('github.com/autokitteh/examples/modules/terraform', 'workspace')
+
+load('./aws.kitteh', 'find_vpc_by_name', 'list_subnets')
+
+load('./vpc.txtar', vpc_files='files')
+load('./subnets.txtar', subnets_files='files')
+
+
+def _init_workspace(kind, name, region, files):
+  env = [
+    'AWS_REGION=' + region,
+    'AWS_ACCESS_KEY_ID=' + aws_creds.access_key_id,
+    'AWS_SECRET_ACCESS_KEY=' + aws_creds.secret_access_key,
+    'AWS_SESSION_TOKEN=' + aws_creds.session_token,
+  ]
+
+  tfw = workspace(default_env=env)
+
+  for name, content in files.items():
+    os.write_text_file(tfw.workdir + '/' + name, content)
+
+  os.write_text_file(
+    tfw.workdir + '/_backend.tf',
+    '''terraform {
+	backend "s3" {
+    encrypt    = true
+	  bucket     = "temporal-terraform-demo-state"
+	  key        = "%(key)s"
+	  region     = "%(region)s"
+	  access_key = "%(acces_key_id)s"
+	  secret_key = "%(secret_access_key)s"
+	  token      = "%(session_token)s"
+	}
+}''' % {
+    key='%s-%s.tfstate' % (kind, name),
+    region=region,
+    access_key_id=aws_creds.access_key_id,
+    secret_access_key=aws_creds.secret_access_key,
+    session_token=aws_creds.session_token,
+  })
+
+  tfw.init()
+
+  return tfw
+
+
+def _create_vpc(name, region, cidr_block):
+  vpc = _find_vpc_by_name(name)
+  vpc_id = vpc.get('VpcId')
+
+  tfw = _init_workspace('vpc', name, region, vpc_files)
+
+  vars = {
+    'cidr_block': cidr_block,
+    'name': name,
+  }
+
+  if vpc_id:
+    tfw.import(vars=vars, address='aws_vpc.vpc', id=vpc_id, fail=True)
+
+  tfw.apply(vars=vars)
+
+  outs, _ = tfw.output()
+
+  out = outs.get('vpc_id')
+
+  return out and out['value']
+
+
+def _destroy_vpc(name, region):
+  _init_workspace('vpc', name, region, vpc_files).destroy()
+
+
+def _create_subnet(name, region, vpc_id, subnets):
+  existing_subnets = list_subnets(vpc_id)
+
+  tfw = _init_workspace('subnets', name, region, subnets_files)
+
+  subnets = [{
+    'cidr_block': subnet['cidr_block'],
+    'name': '%s-%s' % (name, subnet['az']),
+    'availability_zone': '%s%s' % (region, subnet['AvailabilityZone']),
+  } for subnet in subnets ]
+
+  vars = {
+    'vpc_id': vpc_id,
+    'subnets': subnets,
+  }
+
+  for subnet in existing_subnets:
+    tfw.import(
+      vars=vars,
+      address='aws_subnet.subnet["%(AvailabilityZone)s"]' % subnet,
+      id=subnet['SubnetId'],
+      fail=True
+    )
+
+  tfw.apply(vars=vars)
+
+
+def _destroy_subnets(name, region):
+  _init_workspace('subnets', name, region, subnets_files).destroy()
+
+
+def _create_network(name, region, cidr_block, subnets):
+  vpc_id = _create_vpc(name)
+
+  print('created vpc, vpc_id=%s' % vpc_id)
+
+  _create_subnet(name, region, vpc_id, subnets)
+
+  print('created subnet')
+
+
+def _destroy_network(name, region):
+  _destroy_subnets(name, region)
+
+  print('destroyed subnets')
+
+  _destroy_vpcs(name, region)
+
+  print('destroyed vpc')
+
+
+ak.sources.bind('http.POST', _create_network)
+ak.sources.bind('http.DELETE', _destroy_network)

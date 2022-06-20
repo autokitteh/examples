@@ -1,44 +1,48 @@
 # vim: set syntax=python:
 
-load("os", "os")
-load("encoding/json", "encode", "decode")
+load('os', 'os')
+load('encoding/json', 'encode', 'decode')
 
 
-def workspace(workdir, tfpath=None):
+def workspace(workdir=None, tfpath=None, default_env={}):
   if not tfpath:
     tfpath = look_path('terraform')
 
-  if not tfpath:
-    # TODO: error
-    return None
+    if not tfpath:
+      fail('unable to locate terraform')
 
-  def exec(cmd, args=[], vars={}, env=[]):
+  if workdir == None:
+    workdir = os.make_temp_dir()
+
+  def exec(cmd, args=[], vars={}, env=[], fail=False):
     vargs = []
     if vars:
-      # TODO: write to a tempfile somewhere, do not mess with workdir.
       path = '%s/terraform.tsvars.json' % workdir
 
       os.write_text_file(path, encode(vars))
 
       vargs = ['-var-file=' + path]
 
-    _, out = os.exec(tfpath, [cmd, "-no-color"] + vargs + args, env=env, dir=workdir)
+    if not env:
+      env = default_env
+
+    _, out = os.exec(tfpath, [cmd, '-no-color'] + vargs + args, env=env, dir=workdir, fail=fail)
     return out
 
-  def init(env=[]):
-    exec("init", env=env)
+  def init(env=[], fail=False):
+    exec('init', env=env, fail=fail)
 
-  def import(addr, id, vars={}, env={}):
-    exec("import", ["-input=false"] + [addr, id], vars=vars, env=env)
+  def import(addr, id, vars={}, env=[], fail=False):
+    exec('import', ['-input=false'] + [addr, id], vars=vars, env=env, fail=fail)
 
-  def apply(vars={}, env={}):
-    exec("apply", ["-input=false", "-auto-approve"], vars=vars, env=env)
+  def apply(vars={}, env=[], fail=False):
+    exec('apply', ['-input=false', '-auto-approve'], vars=vars, env=env, fail=fail)
 
-  def destroy(vars={}, env={}):
-    exec("destroy", ["-input=false", "-auto-approve"], vars=vars, env=env)
+  def destroy(vars={}, env=[], fail=False):
+    exec('destroy', ['-input=false', '-auto-approve'], vars=vars, env=env, fail=fail)
 
-  def output(env={}):
-    return decode(exec("output", ["-json"], env))
+  def output(env=[], fail=False):
+    return decode(exec('output', ['-json'], env, fail=fail))
 
   return struct(
     init=init,
@@ -47,4 +51,5 @@ def workspace(workdir, tfpath=None):
     destroy=destroy,
     output=output,
     exec=exec,
+    workdir=workdir,
   )

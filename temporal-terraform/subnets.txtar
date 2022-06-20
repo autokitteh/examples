@@ -1,0 +1,32 @@
+-- subnet.tf --
+resource "aws_subnet" "subnet" {
+  for_each = { for k, v in var.subnets : v.availability_zone => v }
+
+  vpc_id            = var.vpc_id
+  cidr_block        = each.value.cidr_block
+  availability_zone = each.value.availability_zone
+  tags = {
+    Name = each.value.name
+  }
+}
+
+-- variables.tf --
+variable "vpc_id" {}
+
+variable "subnets" {
+    type = list(object({
+        name = string
+        availability_zone  = string
+        cidr_block = string
+    }))
+}
+
+-- versions.tf --
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "~> 3.59.0"
+    }
+  }
+}

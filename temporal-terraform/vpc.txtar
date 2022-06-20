@@ -1,0 +1,27 @@
+-- outputs.tf --
+output "vpc_id" {
+    value = aws_vpc.vpc.id
+}
+
+-- variables.tf --
+variable "cidr_block" {}
+
+variable "name" {}
+
+-- versions.tf --
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "~> 3.59.0"
+    }
+  }
+}
+
+-- vpc.tf --
+resource "aws_vpc" "vpc" {
+  cidr_block = var.cidr_block
+  tags = {
+    Name = var.name
+  }
+}
