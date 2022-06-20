@@ -17,6 +17,7 @@ def workspace(workdir=None, tfpath=None, default_env={}):
   def exec(cmd, args=[], vars={}, env=[], fail=False):
     vargs = []
     if vars:
+      # TODO: write to a tempfile somewhere, do not mess with workdir.
       path = '%s/terraform.tsvars.json' % workdir
 
       os.write_text_file(path, encode(vars))

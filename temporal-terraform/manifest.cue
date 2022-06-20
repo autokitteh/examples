@@ -5,6 +5,14 @@ import "encoding/json"
 import "autokitteh.io/manifest"
 
 manifest.#Manifest & {
+	accounts: {
+		"temporal": {}
+	}
+
+	plugins: {
+		"autokitteh.aws": exec: name: "aws"
+	}
+
 	projects: {
 		"temporal.terraform": {
 			main_path: "github:autokitteh/examples/temporal-terraform/auto.kitteh"
