@@ -2,7 +2,7 @@ load('aws', 'ec2')
 
 
 def find_vpc_by_name(name):
-  resp = ec2.DescribeVpcs(
+  vpcs = ec2.DescribeVpcs(
     params={
       'Filters': [
         {
@@ -11,9 +11,7 @@ def find_vpc_by_name(name):
         }
       ]
     }
-  )
-
-  vpcs = resp['Vpcs']
+  ).get('Vpcs', [])
 
   if not vpcs:
     return None
@@ -34,4 +32,4 @@ def list_subnets(vpc_id):
         }
       ]
     }
-  )['Subnets']
+  ).get('Subnets', [])

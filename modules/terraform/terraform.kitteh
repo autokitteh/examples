@@ -6,7 +6,7 @@ load('encoding/json', 'encode', 'decode')
 
 def workspace(workdir=None, tfpath=None, default_env={}):
   if not tfpath:
-    tfpath = look_path('terraform')
+    tfpath = os.look_path('terraform')
 
     if not tfpath:
       fail('unable to locate terraform')
