@@ -1,4 +1,4 @@
-load('aws', 'ec2')
+load('autokitteh.aws', 'ec2')
 
 
 def find_vpc_by_name(name):

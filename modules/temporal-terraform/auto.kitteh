@@ -35,11 +35,11 @@ def _init(kind, name, region, files):
 	  token      = "%(session_token)s"
 	}
 }''' % {
-    key='%s-%s.tfstate' % (kind, name),
-    region=region,
-    access_key_id=creds.access_key_id,
-    secret_access_key=creds.secret_access_key,
-    session_token=creds.session_token,
+    'key': '%s-%s.tfstate' % (kind, name),
+    'region': region,
+    'access_key_id': creds.access_key_id,
+    'secret_access_key': creds.secret_access_key,
+    'session_token': creds.session_token,
   })
 
   w.init()
@@ -60,7 +60,7 @@ def create_vpc(name, region, cidr_block):
   vpc_id = vpc.get('VpcId')
 
   if vpc_id:
-    w.import(vars=vars, address='aws_vpc.vpc', id=vpc_id, fail=True)
+    w.import_(vars=vars, address='aws_vpc.vpc', id=vpc_id, fail=True)
 
   w.apply(vars=vars)
 
@@ -81,19 +81,16 @@ def create_subnets(name, region, vpc_id, subnets):
   subnets = [{
     'cidr_block': subnet['cidr_block'],
     'name': '%s-%s' % (name, subnet['az']),
-    'availability_zone': '%s%s' % (region, subnet['AvailabilityZone']),
+    'availability_zone': '%s%s' % (region, subnet['az']),
   } for subnet in subnets]
 
-  vars = {
-    'vpc_id': vpc_id,
-    'subnets': subnets,
-  }
+  vars = {'vpc_id': vpc_id, 'subnets': subnets}
 
   for subnet in list_subnets(vpc_id):
-    w.import(
+    w.import_(
       vars=vars,
       address='aws_subnet.subnet["%(AvailabilityZone)s"]' % subnet,
-      id=subnet['SubnetId'],
+      id=subnet['subnet_id'],
       fail=True
     )
 
@@ -104,7 +101,7 @@ def destroy_subnets(name, region):
   _init('subnets', name, region, subnets_files).destroy()
 
 
-def create_network(name, region, cidr_block, subnets):
+def create_network(name, region, subnets):
   vpc_id = create_vpc(name)
 
   print('created vpc, vpc_id=%s' % vpc_id)
@@ -119,6 +116,6 @@ def destroy_network(name, region):
 
   print('destroyed subnets')
 
-  destroy_vpcs(name, region)
+  destroy_vpc(name, region)
 
   print('destroyed vpc')

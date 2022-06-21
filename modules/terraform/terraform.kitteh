@@ -33,7 +33,7 @@ def workspace(workdir=None, tfpath=None, default_env={}):
   def init(env=[], fail=False):
     exec('init', env=env, fail=fail)
 
-  def import(addr, id, vars={}, env=[], fail=False):
+  def import_(addr, id, vars={}, env=[], fail=False):
     exec('import', ['-input=false'] + [addr, id], vars=vars, env=env, fail=fail)
 
   def apply(vars={}, env=[], fail=False):
