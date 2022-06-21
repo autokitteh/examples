@@ -1,4 +1,3 @@
-load('ak', 'ak')
 load('os', 'os')
 load('aws', creds='secret_credentials')
 
@@ -48,8 +47,8 @@ def _init(kind, name, region, files):
   return w
 
 
-def _create_vpc(name, region, cidr_block):
-  vpc = _find_vpc_by_name(name)
+def create_vpc(name, region, cidr_block):
+  vpc = find_vpc_by_name(name)
 
   w = _init('vpc', name, region, vpc_files)
 
@@ -72,11 +71,11 @@ def _create_vpc(name, region, cidr_block):
   return out and out['value']
 
 
-def _destroy_vpc(name, region):
+def destroy_vpc(name, region):
   _init('vpc', name, region, vpc_files).destroy()
 
 
-def _create_subnets(name, region, vpc_id, subnets):
+def create_subnets(name, region, vpc_id, subnets):
   w = _init('subnets', name, region, subnets_files)
 
   subnets = [{
@@ -101,29 +100,25 @@ def _create_subnets(name, region, vpc_id, subnets):
   w.apply(vars=vars)
 
 
-def _destroy_subnets(name, region):
+def destroy_subnets(name, region):
   _init('subnets', name, region, subnets_files).destroy()
 
 
-def _create_network(name, region, cidr_block, subnets):
-  vpc_id = _create_vpc(name)
+def create_network(name, region, cidr_block, subnets):
+  vpc_id = create_vpc(name)
 
   print('created vpc, vpc_id=%s' % vpc_id)
 
-  _create_subnets(name, region, vpc_id, subnets)
+  create_subnets(name, region, vpc_id, subnets)
 
   print('created subnets')
 
 
-def _destroy_network(name, region):
-  _destroy_subnets(name, region)
+def destroy_network(name, region):
+  destroy_subnets(name, region)
 
   print('destroyed subnets')
 
-  _destroy_vpcs(name, region)
+  destroy_vpcs(name, region)
 
   print('destroyed vpc')
-
-
-ak.sources.bind('http.POST', _create_network)
-ak.sources.bind('http.DELETE', _destroy_network)
