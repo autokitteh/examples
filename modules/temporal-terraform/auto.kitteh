@@ -1,7 +1,8 @@
 load('os', 'os')
-load('aws', creds='secret_credentials')
+load('autokitteh.aws', creds='secret_credentials')
 
-load('github.com/autokitteh/examples/modules/terraform', 'workspace')
+# load('github.com/autokitteh/examples/modules/terraform/terraform.kitteh', 'workspace')
+load('fsroot:/Users/itaydonanhirsh/src/autokitteh/examples/modules/terraform/terraform.kitteh', 'workspace')
 
 load('./aws.kitteh', 'find_vpc_by_name', 'list_subnets')
 
@@ -27,10 +28,10 @@ def _init(kind, name, region, files):
     '''terraform {
 	backend "s3" {
     encrypt    = true
-	  bucket     = "temporal-terraform-demo-state"
+	  bucket     = "autokitteh-temporal-terraform-demo-state"
 	  key        = "%(key)s"
 	  region     = "%(region)s"
-	  access_key = "%(acces_key_id)s"
+	  access_key = "%(access_key_id)s"
 	  secret_key = "%(secret_access_key)s"
 	  token      = "%(session_token)s"
 	}
@@ -57,14 +58,14 @@ def create_vpc(name, region, cidr_block):
     'name': name,
   }
 
-  vpc_id = vpc.get('VpcId')
-
-  if vpc_id:
-    w.import_(vars=vars, address='aws_vpc.vpc', id=vpc_id, fail=True)
+  if vpc:
+    vpc_id = vpc.get('VpcId')
+    if vpc_id:
+      w.import_(vars=vars, address='aws_vpc.vpc', id=vpc_id, fail=True)
 
   w.apply(vars=vars)
 
-  outs, _ = w.output()
+  outs = w.output()
 
   out = outs.get('vpc_id')
 
@@ -101,8 +102,8 @@ def destroy_subnets(name, region):
   _init('subnets', name, region, subnets_files).destroy()
 
 
-def create_network(name, region, subnets):
-  vpc_id = create_vpc(name)
+def create_network(name, region, cidr_block, subnets):
+  vpc_id = create_vpc(name, region, cidr_block)
 
   print('created vpc, vpc_id=%s' % vpc_id)
 
