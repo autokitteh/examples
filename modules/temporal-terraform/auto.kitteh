@@ -1,8 +1,7 @@
 load('os', 'os')
 load('autokitteh.aws', creds='secret_credentials')
 
-# load('github.com/autokitteh/examples/modules/terraform/terraform.kitteh', 'workspace')
-load('fsroot:/Users/itaydonanhirsh/src/autokitteh/examples/modules/terraform/terraform.kitteh', 'workspace')
+load('github.com/autokitteh/examples/modules/terraform/terraform.kitteh', 'workspace')
 
 load('./aws.kitteh', 'find_vpc_by_name', 'list_subnets')
 
