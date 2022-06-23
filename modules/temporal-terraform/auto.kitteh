@@ -59,17 +59,13 @@ def create_vpc(name, region, cidr_block):
   }
 
   if vpc:
-    vpc_id = vpc.get('VpcId')
+    vpc_id = vpc.get('vpc_id')
     if vpc_id:
-      w.import_(vars=vars, address='aws_vpc.vpc', id=vpc_id, fail=True)
+      w.import_(vars=vars, addr='aws_vpc.vpc', id=vpc_id, allow_fail=True)
 
   w.apply(vars=vars)
 
-  outs = w.output()
-
-  out = outs.get('vpc_id')
-
-  return out and out['value']
+  return w.output().get('vpc_id', {}).get('value')
 
 
 def destroy_vpc(name, region):
@@ -90,9 +86,9 @@ def create_subnets(name, region, vpc_id, subnets):
   for subnet in list_subnets(vpc_id):
     w.import_(
       vars=vars,
-      address='aws_subnet.subnet["%(AvailabilityZone)s"]' % subnet,
+      addr='aws_subnet.subnet["%(availability_zone)s"]' % subnet,
       id=subnet['subnet_id'],
-      fail=True
+      allow_fail=True
     )
 
   w.apply(vars=vars)
@@ -113,9 +109,9 @@ def create_network(name, region, cidr_block, subnets):
 
 
 def destroy_network(name, region):
-  destroy_subnets(name, region)
+  #destroy_subnets(name, region)
 
-  print('destroyed subnets')
+  #print('destroyed subnets')
 
   destroy_vpc(name, region)
 

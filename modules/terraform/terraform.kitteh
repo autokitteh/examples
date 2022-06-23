@@ -27,26 +27,32 @@ def workspace(workdir=None, tfpath=None, default_env={}):
     if not env:
       env = default_env
 
-    rc, out = os.exec(tfpath, [cmd, '-no-color'] + vargs + args, env=env, dir=workdir, fail=allow_fail)
-    return rc, out
+    args = [cmd, '-no-color'] + vargs + args
 
-  def init(env=[], allow_fail=False):
-    exec('init', env=env, allow_fail=allow_fail)
+    print("$ %s %s" % (tfpath, args))
+
+    rc, out = os.exec(tfpath, args, env=env, dir=workdir, fail=not allow_fail)
+    if rc != 0 and not allow_fail:
+      fail("exec %s: rc=%d, out=%s" % (cmd, rc, out))
+
+    print(out)
+
+    return out
+
+  def init(env=[]):
+    exec('init', env=env)
 
   def import_(addr, id, vars={}, env=[], allow_fail=False):
     exec('import', ['-input=false'] + [addr, id], vars=vars, env=env, allow_fail=allow_fail)
 
-  def apply(vars={}, env=[], allow_fail=False):
-    exec('apply', ['-input=false', '-auto-approve'], vars=vars, env=env, allow_fail=allow_fail)
+  def apply(vars={}, env=[]):
+    exec('apply', ['-input=false', '-auto-approve'], vars=vars, env=env)
 
-  def destroy(vars={}, env=[], allow_fail=False):
-    exec('destroy', ['-input=false', '-auto-approve'], vars=vars, env=env, allow_fail=allow_fail)
+  def destroy(vars={}, env=[]):
+    exec('destroy', ['-input=false', '-auto-approve'], vars=vars, env=env)
 
-  def output(env=[], allow_fail=False):
-    rc, out = exec('output', ['-json'], env, allow_fail=allow_fail)
-    if not rc:
-      out = json.decode(out)
-    return rc, out
+  def output(env=[]):
+    return json.decode(exec('output', ['-json'], env))
 
   return struct(
     init=init,
